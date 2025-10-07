@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sportify — AI Sports Talent Prototype</title>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#9aa4b2; --accent:#00b894;
+      --glass: rgba(255,255,255,0.03);
+      --card-2: #0b1624;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:linear-gradient(180deg,#071428 0%, #071a2a 100%); color:#e6eef6;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+    .container{max-width:1100px;margin:28px auto;padding:20px;}
+
+    /* NAV */
+    .nav{
+      display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:12px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: 0 6px 18px rgba(2,6,23,0.6);
+      backdrop-filter: blur(6px);
+    }
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{
+      width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#00a8ff);
+      display:flex;align-items:center;justify-content:center;font-weight:700;color:#052023;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.5);
+    }
+    .brand h1{margin:0;font-size:18px}
+    .nav-links{display:flex;gap:14px;align-items:center}
+    .nav-links a{color:var(--muted);text-decoration:none;padding:8px 12px;border-radius:8px}
+    .nav-links a.active, .nav-links a:hover{background:var(--glass);color:#fff}
+
+    .cta{display:flex;gap:8px;align-items:center}
+    .btn{padding:8px 12px;border-radius:10px;cursor:pointer;background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+    .btn.primary{background:linear-gradient(90deg,var(--accent),#00a8ff);color:#022; font-weight:600;border:none}
+    .small{font-size:13px;padding:6px 8px;border-radius:8px}
+
+    /* HERO */
+    .hero{display:grid;grid-template-columns:1fr 420px;gap:24px;margin-top:20px;align-items:center}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.5)}
+    h2{margin:0 0 10px 0}
+    p.muted{color:var(--muted);line-height:1.45}
+
+    /* FEATURE GRID */
+    .features{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px}
+    .feat{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01))}
+    .icon{width:46px;height:46px;border-radius:10px;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent)}
+
+    /* layout for main app views */
+    .main{display:grid;grid-template-columns: 1fr; gap:16px;margin-top:20px}
+    .columns{display:grid;grid-template-columns: 1fr 360px; gap:16px}
+
+    /* DASHBOARD BLOCKS */
+    .block{padding:12px;border-radius:10px;background:var(--card-2)}
+    .row{display:flex;gap:12px;align-items:center}
+    .metric{display:flex;flex-direction:column;padding:14px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));min-width:120px}
+    .metric small{color:var(--muted)}
+
+    /* Table for coach */
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,0.03);text-align:left}
+    th{color:var(--muted);font-weight:600}
+
+    /* forms */
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input,select,textarea{width:100%;padding:8px 10px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:#eaf5ff}
+    .form-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+
+    /* modal */
+    .modal{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:none;align-items:center;justify-content:center;z-index:60}
+    .modal.show{display:flex}
+    .dialog{width:420px;background:var(--card);padding:18px;border-radius:12px}
+
+    /* small helpers */
+    .muted{color:var(--muted)}
+    .success{color:#7ef5c2}
+    .danger{color:#ff7b7b}
+    .chip{padding:6px 8px;border-radius:999px;background:rgba(255,255,255,0.02);font-size:13px;color:var(--muted)}
+    .avatar{width:44px;height:44px;border-radius:8px;background:linear-gradient(180deg,#062b2a, #034);display:inline-flex;align-items:center;justify-content:center;font-weight:700}
+    footer{margin-top:36px;text-align:center;color:var(--muted);font-size:13px;padding:18px}
+    @media (max-width:900px){
+      .hero{grid-template-columns:1fr}
+      .columns{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- NAV -->
+    <div class="nav" id="nav">
+      <div class="brand" style="gap:10px">
+        <div class="logo">S</div>
+        <div>
+          <h1>Sporti-fy</h1>
+          <div class="muted" style="font-size:12px">Discover • Track • Coach</div>
+        </div>
+      </div>
+
+      <div class="nav-links" id="navLinks">
+        <a href="#" data-view="home" class="active">Home</a>
+        <a href="#" data-view="athlete">Athlete Dashboard</a>
+        <a href="#" data-view="coach">Coach Dashboard</a>
+        <a href="#" data-view="community">Community</a>
+        <a href="#" data-view="about">About</a>
+      </div>
+
+      <div class="cta">
+        <button class="btn primary small" id="btnLogin">Login / OTP</button>
+      </div>
+    </div>
+
+    <!-- MAIN APP AREA -->
+    <div id="appViews">
+
+      <!-- HOME VIEW -->
+      <section id="view-home" class="main">
+        <div class="hero card">
+          <h2>Unlock India’s Hidden Sports Talent with AI</h2>
+          <p class="muted">Sportify helps athletes record their performance, get AI-driven suggestions, and connects them with coaches — designed for accessibility and impact.</p>
+
+          <div style="margin-top:12px;display:flex;gap:10px">
+            <button class="btn"><a href="altsignup.html">Join as Athlete</a></button>
+            <button class="btn" ><a href="coachsignup.html">Join as Coach</a></button>
+          </div>
+
+          <div class="features" style="margin-top:18px">
+            <div class="feat"><div class="icon">📹</div><div><strong>Remote Discovery</strong><div class="muted">Record tests or upload pose data (PWA)</div></div></div>
+            <div class="feat"><div class="icon">📊</div><div><strong>Performance Tracking</strong><div class="muted">Progress charts and history</div></div></div>
+            <div class="feat"><div class="icon">🤖</div><div><strong>AI Suggestions</strong><div class="muted">Personalized training advice</div></div></div>
+            <div class="feat"><div class="icon">🏅</div><div><strong>Gamification</strong><div class="muted">Badges, leaderboards & motivation</div></div></div>
+          </div>
+
+          <div style="margin-top:14px" class="muted">Prototype note: OTP is simulated client-side for demo. At the time of production we will integrate SMS authentication</div>
+        </div>
+
+        <aside>
+          <div class="card block">
+            <h3 style="margin-top:0">Quick Demo</h3>
+            <p class="muted">Try signing up as Athlete, add a test, and see instant AI-level + suggestions. Coaches can compare athletes and send plans.</p>
+            <div style="margin-top:10px" class="row">
+              <div class="metric"><small>Athletes</small><strong id="statAthletes">--</strong></div>
+              <div class="metric"><small>Coaches</small><strong id="statCoaches">--</strong></div>
+              <div class="metric"><small>Analyses</small><strong id="statAnalyses">--</strong></div>
+            </div>
+          </div>
+
+          <div class="card block" style="margin-top:12px">
+            <h3 style="margin-top:0">Leaderboard (Sample)</h3>
+            <ol id="leaderboard" style="padding-left:18px;margin-top:8px;color:var(--muted)"></ol>
+          </div>
+        </aside>
+      </section>
+
+      <!-- ATHLETE VIEW -->
+      <section id="view-athlete" style="display:none">
+        <div class="columns">
+          <div>
+            <div class="card block">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div class="row">
+                  <div class="avatar" id="athleteAvatar">A</div>
+                  <div style="margin-left:10px">
+                    <div id="athleteName" style="font-weight:700">Athlete</div>
+                    <div class="muted" id="athleteSport">Sport: —</div>
+                  </div>
+                </div>
+                <div style="text-align:right">
+                  <div class="chip" id="athleteLevel">Level: —</div>
+                  <div style="font-size:12px;color:var(--muted)">Badges: <span id="athleteBadges">—</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card block" style="margin-top:12px">
+              <h3 style="margin:0 0 8px 0">Add New Test</h3>
+              <div>
+                <label>100m Sprint (sec)</label>
+                <input id="inpSprint" type="number" step="0.01" placeholder="e.g., 13.5" />
+                <div style="height:8px"></div>
+                <label>Pushups (count)</label>
+                <input id="inpPushups" type="number" placeholder="e.g., 25" />
+                <div style="height:8px"></div>
+                <label>Endurance (minutes)</label>
+                <input id="inpEndurance" type="number" placeholder="e.g., 12" />
+                <div style="height:12px"></div>
+                <button class="btn primary" onclick="addTest()">Add Test & Analyze</button>
+                <div id="addTestMsg" style="margin-top:8px" class="muted"></div>
+              </div>
+            </div>
+
+            <div class="card block" style="margin-top:12px">
+              <h3 style="margin:0 0 8px 0">AI Suggestions</h3>
+              <div id="aiSuggestions" class="muted">No analyses yet — add a test.</div>
+            </div>
+
+            <div class="card block" style="margin-top:12px">
+              <h3 style="margin:0 0 8px 0">Achievements</h3>
+              <div id="achievements" style="display:flex;gap:8px;flex-wrap:wrap">
+                <!-- badges -->
+              </div>
+            </div>
+          </div>
+
+          <aside>
+            <div class="card block">
+              <h3 style="margin:0 0 8px 0">Performance (last tests)</h3>
+              <canvas id="chartSprint" height="180"></canvas>
+              <div style="height:12px"></div>
+              <canvas id="chartPushups" height="160"></canvas>
+            </div>
+
+            <div class="card block" style="margin-top:12px">
+              <h3 style="margin:0 0 8px 0">Contact / Book a Coach</h3>
+              <div id="coachList"></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- COACH VIEW -->
+      <section id="view-coach" style="display:none">
+        <div class="card block">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <h3 style="margin:0">Coach Dashboard</h3>
+              <div class="muted">Manage athletes, compare performance and send plans.</div>
+              <div class="muted">NOTE : this page will have individual Coach Dashboard. It is only a demo. The below information will not be shown without login.</div>
+            </div>
+            <div>
+              <div class="chip">Athletes: <span id="coachStatCount">0</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns: 1fr 420px; gap:14px; margin-top:12px">
+          <div>
+            <div class="card block">
+              <h4 style="margin-top:0">Athlete List</h4>
+              <div style="margin-bottom:8px">
+                <input id="coachSearch" placeholder="Search athlete by name..." oninput="renderAthleteTable()" />
+              </div>
+              <table>
+                <thead>
+                  <tr><th>Name</th><th>Sport</th><th>Level</th><th>Last Test</th><th>Action</th></tr>
+                </thead>
+                <tbody id="athleteTable"></tbody>
+              </table>
+            </div>
+
+            <div class="card block" style="margin-top:12px">
+              <h4 style="margin-top:0">Athlete Comparison Tool</h4>
+              <div class="form-row" style="margin-bottom:8px">
+                <select id="compareA"></select>
+                <select id="compareB"></select>
+              </div>
+              <button class="btn primary" onclick="compareAthletes()">Compare</button>
+              <div style="height:12px"></div>
+              <canvas id="compareChart" height="220"></canvas>
+            </div>
+          </div>
+
+          <aside>
+            <div class="card block">
+              <h4 style="margin-top:0">Performance Insights</h4>
+              <div id="coachInsights" class="muted">Select an athlete to view detailed analysis.</div>
+            </div>
+
+            <div class="card block" style="margin-top:12px">
+              <h4 style="margin-top:0">Contact Athlete</h4>
+              <div id="contactAthleteArea"></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- COMMUNITY -->
+      <section id="view-community" style="display:none">
+        <div class="card block">
+          <h3 style="margin-top:0">Community</h3>
+          <p class="muted">Leaderboards, featured athletes, and motivational posts.</p>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <div style="flex:1" class="card block">
+              <h4 style="margin-top:0">Leaderboard</h4>
+              <ol id="communityLeaderboard" style="color:var(--muted)"></ol>
+            </div>
+            <div style="width:320px" class="card block">
+              <h4 style="margin-top:0">Featured</h4>
+              <div id="featuredArea" class="muted">No featured athletes — add sample data to demo.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ABOUT -->
+      <section id="view-about" style="display:none">
+        <div class="card block">
+          <h3 style="margin-top:0">About Sportify</h3>
+          <p class="muted">Sportify is a hackathon prototype for remote talent discovery and performance tracking. The MVP demonstrates athlete/coaches workflows, AI suggestions (client-side heuristics), and dashboards. Future work: on-device pose extraction, real video analysis pipeline, backend OTP & SMS, advanced ML models.</p>
+        </div>
+      </section>
+
+    </div>
+
+    <footer>Built for HackWithHyderabad — Prototype demo • Open-source (frontend)</footer>
+  </div>
+
+  <!-- OTP / Signup Modal -->
+  <div class="modal" id="modalAuth">
+    <div class="dialog">
+      <h3 id="modalTitle">Login / OTP</h3>
+      <div id="authStep1">
+        <label>Role</label>
+        <select id="authRole">
+          <option value="athlete">Athlete</option>
+          <option value="coach">Coach</option>
+        </select>
+        <div style="height:8px"></div>
+        <label>Phone Number</label>
+        <input id="authPhone" placeholder="+91 98765 43210" />
+        <div style="height:8px"></div>
+        <button class="btn primary" onclick="sendOtp()">Send OTP (simulated)</button>
+        <div id="otpHint" class="muted" style="margin-top:8px">For prototype the OTP will be shown in a notification for demo.</div>
+      </div>
+
+      <div id="authStep2" style="display:none;margin-top:10px">
+        <label>Enter OTP</label>
+        <input id="authOtp" placeholder="4-digit OTP" />
+        <div style="height:8px"></div>
+        <button class="btn primary" onclick="verifyOtp()">Verify & Login</button>
+        <button class="btn" onclick="resetAuth()">Cancel</button>
+        <div id="otpResult" style="margin-top:8px" class="muted"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact Modal (used for message coach/athlete) -->
+  <div class="modal" id="modalContact">
+    <div class="dialog">
+      <h3 id="contactTitle">Contact</h3>
+      <label>Message</label>
+      <textarea id="contactMsg" rows="4" placeholder="Write message..."></textarea>
+      <div style="height:8px"></div>
+      <button class="btn primary" onclick="sendContact()">Send</button>
+      <button class="btn" onclick="closeModal('modalContact')" style="margin-left:8px">Close</button>
+      <div id="contactSent" style="margin-top:8px" class="muted"></div>
+    </div>
+  </div>
+
+  <script>
+    /*************** Simple in-browser data store (localStorage) ***************/
+    const store = {
+      get(k){ try{ return JSON.parse(localStorage.getItem(k)) }catch(e){return null} },
+      set(k,v){ localStorage.setItem(k, JSON.stringify(v)) }
+    };
+
+    // initialize sample data if missing
+    if(!store.get('users')){
+      const sampleUsers = {
+        athletes: [
+          {id:'ath1', name:'Rahul', sport:'Athletics', phone:'+919000000001', tests:[
+            {date:'2025-08-01', sprint:15.0, pushups:10, endurance:6},
+            {date:'2025-08-20', sprint:14.0, pushups:15, endurance:8},
+            {date:'2025-09-10', sprint:13.2, pushups:22, endurance:11}
+          ], badges:['Bronze']},
+          {id:'ath2', name:'Priya', sport:'Athletics', phone:'+919000000002', tests:[
+            {date:'2025-07-20', sprint:14.5, pushups:20, endurance:9},
+            {date:'2025-08-25', sprint:13.9, pushups:24, endurance:12}
+          ], badges:['Bronze','Silver']},
+          {id:'ath3', name:'Vikram', sport:'Football', phone:'+919000000003', tests:[
+            {date:'2025-08-10', sprint:12.8, pushups:28, endurance:15}
+          ], badges:['Silver']}
+        ],
+        coaches: [
+          {id:'c1', name:'Anita', phone:'+919100000001', athletes:['ath1','ath2']},
+          {id:'c2', name:'Suresh', phone:'+919100000002', athletes:['ath3']}
+        ],
+        analyses: []
+      };
+      store.set('users', sampleUsers);
+    }
+
+    // auth state
+    let auth = store.get('auth') || null; // {role:'athlete'|'coach', id:...}
+    const users = ()=>store.get('users');
+
+    /*************** Navigation handling ***************/
+    document.querySelectorAll('#navLinks a').forEach(a=>{
+      a.addEventListener('click', (e)=>{
+        e.preventDefault();
+        const view = a.dataset.view;
+        openView(view);
+        document.querySelectorAll('#navLinks a').forEach(x=>x.classList.remove('active'));
+        a.classList.add('active');
+      });
+    });
+
+    function openView(v){
+      document.querySelectorAll('[id^="view-"]').forEach(s=>s.style.display='none');
+      const node = document.getElementById('view-'+v);
+      if(node) node.style.display='';
+      // show required sections based on auth
+      if(v==='athlete') renderAthleteView();
+      if(v==='coach') renderCoachView();
+      if(v==='home') renderHomeStats();
+      if(v==='community') renderCommunity();
+    }
+
+    // initial
+    openView('home');
+
+    /*************** AUTH (simulated OTP) ***************/
+    document.getElementById('btnLogin').addEventListener('click', ()=>openAuth());
+    document.getElementById('btnSignup').addEventListener('click', ()=>showSignup());
+
+    function openAuth(){
+      document.getElementById('modalTitle').innerText = 'Login / OTP';
+      document.getElementById('authStep1').style.display='';
+      document.getElementById('authStep2').style.display='none';
+      document.getElementById('modalAuth').classList.add('show');
+    }
+    function resetAuth(){ document.getElementById('modalAuth').classList.remove('show'); }
+
+    // show signup shortcut
+    function showSignup(role){
+      openAuth();
+      document.getElementById('authRole').value = role || 'athlete';
+    }
+
+    // simulate sending OTP (client-side)
+    function sendOtp(){
+      const phone = document.getElementById('authPhone').value.trim();
+      const role = document.getElementById('authRole').value;
+      if(!phone){ alert('Enter phone number'); return; }
+      // generate OTP and store in sessionStorage (demo)
+      const otp = String(Math.floor(1000 + Math.random()*9000));
+      sessionStorage.setItem('demo_otp', otp);
+      sessionStorage.setItem('demo_otp_phone', phone);
+      sessionStorage.setItem('demo_otp_role', role);
+      // show next step
+      document.getElementById('authStep1').style.display='none';
+      document.getElementById('authStep2').style.display='';
+      // show demo OTP hint (only for prototype)
+      document.getElementById('otpResult').innerText = 'Demo OTP: ' + otp + ' (client-side)';
+      console.info('Demo OTP for', phone, 'is', otp);
+    }
+
+    function verifyOtp(){
+      const entered = document.getElementById('authOtp').value.trim();
+      const otp = sessionStorage.getItem('demo_otp');
+      const phone = sessionStorage.getItem('demo_otp_phone');
+      const role = sessionStorage.getItem('demo_otp_role');
+
+      if(entered === otp){
+        // sign up or login: create minimal user if not exists
+        const storeUsers = users();
+        if(role==='athlete'){
+          let ath = storeUsers.athletes.find(a=>a.phone===phone);
+          if(!ath){
+            // create sample athlete id
+            ath = {id:'ath'+(Date.now()%100000), name:'New Athlete', sport:'Athletics', phone, tests:[], badges:[]};
+            storeUsers.athletes.push(ath);
+            store.set('users', storeUsers);
+          }
+          auth = {role:'athlete', id:ath.id};
+        } else {
+          let co = storeUsers.coaches.find(c=>c.phone===phone);
+          if(!co){
+            co = {id:'c'+(Date.now()%100000), name:'New Coach', phone, athletes:[]};
+            storeUsers.coaches.push(co);
+            store.set('users', storeUsers);
+          }
+          auth = {role:'coach', id:co.id};
+        }
+        store.set('auth', auth);
+        document.getElementById('modalAuth').classList.remove('show');
+        renderHomeStats();
+        alert('Logged in as ' + role);
+        if(auth.role==='athlete') openView('athlete'); else openView('coach');
+      } else {
+        document.getElementById('otpResult').innerText = 'Incorrect OTP. Try again.';
+      }
+    }
+
+    /*************** HOME STATS & LEADERBOARD ***************/
+    function renderHomeStats(){
+      const s = users();
+      document.getElementById('statAthletes').innerText = s.athletes.length;
+      document.getElementById('statCoaches').innerText = s.coaches.length;
+      document.getElementById('statAnalyses').innerText = s.analyses.length;
+
+      // simple leaderboard by last sprint time (lower is better)
+      const lb = [...s.athletes].map(a=>{
+        const last = a.tests[a.tests.length-1];
+        return {name:a.name, sprint:last?last.sprint:999};
+      }).sort((x,y)=>x.sprint-y.sprint).slice(0,5);
+      const ol = document.getElementById('leaderboard');
+      ol.innerHTML = lb.map(li=>`<li>${li.name} — ${li.sprint===999?'-':li.sprint+'s'}</li>`).join('');
+    }
+
+    /*************** ATHLETE VIEW RENDER & ACTIONS ***************/
+    function getAuthAthlete(){
+      if(!auth || auth.role!=='athlete') return null;
+      const s = users();
+      return s.athletes.find(a=>a.id===auth.id) || null;
+    }
+
+    function renderAthleteView(){
+      // if not logged-in athlete, show prompt
+      const ath = getAuthAthlete();
+      if(!ath){
+        document.getElementById('athleteName').innerText = 'Not logged in ! Please login as Athlete';
+        document.getElementById('athleteSport').innerText = 'NOTE : this page will have individual athlete analysis. It is only a demo. The below information will not be shown without login.';
+        document.getElementById('athleteLevel').innerText = 'Level: —';
+        document.getElementById('achievements').innerHTML = '<div class="muted">Login to see your badges</div>';
+        document.getElementById('coachList').innerHTML = `<button class="btn" onclick="openAuth()">Login / Sign Up</button>`;
+        return;
+      }
+      document.getElementById('athleteName').innerText = ath.name;
+      document.getElementById('athleteSport').innerText = 'Sport: ' + ath.sport;
+      document.getElementById('athleteAvatar').innerText = ath.name.split(' ')[0][0] || 'A';
+      document.getElementById('athleteBadges').innerText = (ath.badges||[]).join(', ') || '—';
+
+      // derive level from latest test using simple heuristic
+      const latest = ath.tests[ath.tests.length-1];
+      const level = levelFromTest(latest);
+      document.getElementById('athleteLevel').innerText = 'Level: ' + (level || '-');
+
+      // achievements
+      const ach = document.getElementById('achievements');
+      ach.innerHTML = (ath.badges||[]).map(b=>`<div class="chip">${b}</div>`).join(' ') || '<div class="muted">No badges yet</div>';
+
+      // charts
+      renderAthleteCharts(ath);
+
+      // AI suggestions for latest
+      if(latest){
+        const s = aiSuggestions(latest, ath);
+        document.getElementById('aiSuggestions').innerHTML = `<div>${s.map(x=>'<div>• '+x+'</div>').join('')}</div>`;
+      } else {
+        document.getElementById('aiSuggestions').innerText = 'No data yet — add a test to get suggestions.';
+      }
+
+      // list coaches to contact
+      const sdata = users();
+      const coachList = document.getElementById('coachList');
+      coachList.innerHTML = sdata.coaches.map(c=>{
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0">
+          <div><strong>${c.name}</strong><div class="muted">${c.phone}</div></div>
+          <div><button class="btn small" onclick="openContact('${c.id}','coach','${c.name}')">Message</button></div>
+        </div>`;
+      }).join('');
+    }
+
+    function addTest(){
+      const sprint = parseFloat(document.getElementById('inpSprint').value);
+      const pushups = parseInt(document.getElementById('inpPushups').value);
+      const endurance = parseInt(document.getElementById('inpEndurance').value);
+      if(!sprint || !pushups || !endurance){ alert('Enter all fields'); return; }
+      const ath = getAuthAthlete();
+      if(!ath){ openAuth(); return; }
+      const test = {date: new Date().toISOString().split('T')[0], sprint, pushups, endurance};
+      ath.tests.push(test);
+      // small rule: award badges
+      if(pushups>=30 && !ath.badges.includes('Strength')) ath.badges.push('Strength');
+      if(endurance>=15 && !ath.badges.includes('Endurance')) ath.badges.push('Endurance');
+      store.set('users', users());
+      document.getElementById('addTestMsg').innerText = 'Test added. AI analyzing...';
+      // simulate analysis record (store analyses)
+      const analysis = {athleteId:ath.id, date:test.date, level: levelFromTest(test), suggestions: aiSuggestions(test,ath)};
+      const s = users();
+      s.analyses.push(analysis);
+      store.set('users', s);
+      setTimeout(()=>{
+        document.getElementById('addTestMsg').innerText = 'Analysis complete: Level — ' + analysis.level;
+        renderAthleteView();
+        renderHomeStats();
+      }, 600);
+    }
+
+    function levelFromTest(test){
+      if(!test) return null;
+      // small heuristic: combine metrics; lower sprint + more pushups + endurance -> higher level
+      const score = (20 - test.sprint)*1.2 + (test.pushups/10) + (test.endurance/4);
+      if(score >= 12) return 'Advanced';
+      if(score >= 8) return 'Intermediate';
+      return 'Beginner';
+    }
+
+    function aiSuggestions(test,athlete){
+      if(!test) return [];
+      const out = [];
+      if(test.sprint > 14) out.push('Work on speed sessions: interval sprints 2x/week.');
+      if(test.endurance < 10) out.push('Increase endurance: 20-30 min steady runs 3x/week.');
+      if(test.pushups < 20) out.push('Upper-body strength: pushup progression + core work.');
+      if((athlete.badges||[]).length===0) out.push('Submit 3 tests in 4 weeks to earn Bronze badge.');
+      // injury hint (very simple)
+      if(test.endurance < 6 && test.sprint > 17) out.push('Possible low fitness baseline — proceed gradually to avoid injury.');
+      return out;
+    }
+    
+
+    function renderAthleteCharts(ath){
+      const sprintCtx = document.getElementById('chartSprint').getContext('2d');
+      const pushCtx = document.getElementById('chartPushups').getContext('2d');
+      const dates = ath.tests.map(t=>t.date);
+      const sprints = ath.tests.map(t=>t.sprint);
+      const pushups = ath.tests.map(t=>t.pushups);
+
+      // destroy previous if exists
+      if(window._sprintChart) window._sprintChart.destroy();
+      if(window._pushChart) window._pushChart.destroy();
+
+      window._sprintChart = new Chart(sprintCtx, {
+        type:'line',
+        data:{labels:dates, datasets:[{label:'100m sprint (s)', data:sprints, tension:0.25, fill:false}]},
+        options:{plugins:{legend:{display:true}, tooltip:{mode:'index'}}, scales:{y:{beginAtZero:false}}}
+      });
+      window._pushChart = new Chart(pushCtx, {
+        type:'bar',
+        data:{labels:dates, datasets:[{label:'Pushups', data:pushups}]},
+        options:{plugins:{legend:{display:false}}}
+      });
+    }
+
+    /*************** Coach View rendering ***************/
+    function renderCoachView(){
+      // if not coach, prompt
+      const s = users();
+      const coach = auth && auth.role==='coach' ? s.coaches.find(c=>c.id===auth.id) : null;
+      document.getElementById('coachStatCount').innerText = s.athletes.length;
+      renderAthleteTable();
+      // populate compare selects
+      const selA = document.getElementById('compareA'), selB = document.getElementById('compareB');
+      selA.innerHTML = '<option value="">Select athlete</option>' + s.athletes.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+      selB.innerHTML = '<option value="">Select athlete</option>' + s.athletes.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+      document.getElementById('coachInsights').innerText = 'Select an athlete from the table to view details';
+      document.getElementById('contactAthleteArea').innerHTML = coach ? `<div class="muted">You are logged in as ${coach.name}</div>` + '' : `<div class="muted">Login as Coach to message athletes</div>`;
+    }
+
+    function renderAthleteTable(){
+      const s = users();
+      const q = document.getElementById('coachSearch').value.toLowerCase();
+      const tbody = document.getElementById('athleteTable');
+      tbody.innerHTML = s.athletes.filter(a => a.name.toLowerCase().includes(q)).map(a=>{
+        const last = a.tests[a.tests.length-1];
+        const lvl = levelFromTest(last);
+        const lastDate = last ? last.date : '-';
+        return `<tr>
+          <td><strong>${a.name}</strong><div class="muted">${a.phone || ''}</div></td>
+          <td>${a.sport}</td>
+          <td>${lvl || '-'}</td>
+          <td>${lastDate}</td>
+          <td><button class="btn small" onclick="viewAthleteDetails('${a.id}')">View</button></td>
+        </tr>`;
+      }).join('');
+    }
+
+    function viewAthleteDetails(id){
+      const s = users();
+      const a = s.athletes.find(x=>x.id===id);
+      if(!a){ alert('Athlete not found'); return; }
+      // show details in coach insights
+      const last = a.tests[a.tests.length-1];
+      const lvl = levelFromTest(last);
+      const insights = document.getElementById('coachInsights');
+      insights.innerHTML = `<div><strong>${a.name}</strong> (${a.sport})</div>
+        <div class="muted">Level: ${lvl}</div>
+        <div style="margin-top:8px"><strong>Last Test:</strong> ${last?JSON.stringify(last):'No data'}</div>
+        <div style="margin-top:8px"><button class="btn" onclick="openContact('${a.id}','athlete','${a.name}')">Message Athlete</button></div>`;
+      // Also show a per-athlete chart in a modal or below - quick approach: reuse compare chart
+      document.getElementById('compareA').value = id;
+      compareAthletes(); // compares id vs whatever is in B (if none then early return)
+    }
+
+    function compareAthletes(){
+      const aId = document.getElementById('compareA').value;
+      const bId = document.getElementById('compareB').value;
+      if(!aId || !bId){ if(!bId) return; }
+      const s = users();
+      const A = s.athletes.find(x=>x.id===aId);
+      const B = s.athletes.find(x=>x.id===bId);
+      const labels = Array.from(new Set( (A.tests||[]).map(t=>t.date).concat((B.tests||[]).map(t=>t.date)) )).sort();
+      const getSeries = (ath)=> labels.map(d=>{
+        const t = (ath.tests||[]).find(x=>x.date===d);
+        return t ? t.sprint : null;
+      });
+      const ctx = document.getElementById('compareChart').getContext('2d');
+      if(window._compareChart) window._compareChart.destroy();
+      window._compareChart = new Chart(ctx, {
+        type:'line',
+        data:{
+          labels,
+          datasets:[
+            {label:A.name, data:getSeries(A), tension:0.25},
+            {label:B.name, data:getSeries(B), tension:0.25}
+          ]
+        },
+        options:{plugins:{legend:{display:true}}}
+      });
+    }
+
+    /*************** Contact Modal ***************/
+    let contactTarget = null;
+    function openContact(targetId, targetType, displayName){
+      contactTarget = {id:targetId, type:targetType, name:displayName};
+      document.getElementById('contactTitle').innerText = `Message ${displayName}`;
+      document.getElementById('contactMsg').value = '';
+      document.getElementById('contactSent').innerText = '';
+      document.getElementById('modalContact').classList.add('show');
+    }
+    function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+    function sendContact(){
+      if(!contactTarget) return;
+      const msg = document.getElementById('contactMsg').value.trim();
+      if(!msg){ document.getElementById('contactSent').innerText = 'Write a message first'; return; }
+      // in prototype we simply record the message under analyses for demo
+      const s = users();
+      s.analyses.push({type:'message', to:contactTarget.id, from:(auth?auth.id:'anonymous'), text:msg, date:new Date().toISOString()});
+      store.set('users', s);
+      document.getElementById('contactSent').innerText = 'Message sent (simulated).';
+      setTimeout(()=>closeModal('modalContact'), 900);
+    }
+
+    // close modals when clicking outside
+    document.querySelectorAll('.modal').forEach(m=>{
+      m.addEventListener('click', (e)=>{ if(e.target===m) m.classList.remove('show') });
+    });
+
+    /*************** Community Rendering ***************/
+    function renderCommunity(){
+      const s = users();
+      const ol = document.getElementById('communityLeaderboard');
+      ol.innerHTML = s.athletes.map(a=>`<li>${a.name} — ${ (a.tests[a.tests.length-1]||{}).sprint || '-' }s</li>`).join('');
+      document.getElementById('featuredArea').innerText = s.athletes[0].name + ' — Rising Star';
+    }
+
+    /*************** Initial render and helpers ***************/
+    renderHomeStats();
+    // if existing auth then open view
+    if(auth){
+      if(auth.role==='athlete') openView('athlete');
+      if(auth.role==='coach') openView('coach');
+    }
+
+    // keyboard quick toggles (for demo)
+    window.addEventListener('keydown',(e)=>{
+      if(e.key==='1') openView('home');
+      if(e.key==='2') openView('athlete');
+      if(e.key==='3') openView('coach');
+    });
+  </script>
+</body>
+</html>
