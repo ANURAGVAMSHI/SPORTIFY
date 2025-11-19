@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Sportify — AI Sports Talent Prototype</title>
+  <meta name="view port" content="width=device-width,initial-scale=1" />
+  <title>Sportify - AI Sports Talent Prototype</title>
 
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -355,6 +355,7 @@
       <div id="contactSent" style="margin-top:8px" class="muted"></div>
     </div>
   </div>
+  
 
   <script>
     /*************** Simple in-browser data store (localStorage) ***************/
@@ -760,5 +761,282 @@
       if(e.key==='3') openView('coach');
     });
   </script>
+ <!-- Chatbot Button -->
+<div id="chatbot-button"
+     style="
+     position: fixed; bottom: 30px; right: 30px;
+     width: 60px; height: 60px;
+     background: rgba(255,255,255,0.08);
+     backdrop-filter: blur(6px);
+     border-radius: 50%;
+     cursor: pointer;
+     z-index: 999;
+     display: flex; align-items: center; justify-content: center;
+     box-shadow: 0 6px 20px rgba(0,0,0,0.45);">
+    <img src=""
+         style="width:40px; height:40px; border-radius:50%;">
+</div>
+
+<!-- Chatbot Window -->
+<div id="chatbot-box"
+     style="
+     position: fixed; bottom: 100px; right: 30px;
+     width: 330px; height: 430px;
+     background: #0b1120;
+     border-radius: 12px;
+     box-shadow: 0 4px 25px rgba(0,0,0,0.6);
+     display: none; flex-direction: column;
+     color: white; z-index: 999;">
+    
+    <div style="background:#1e293b; padding:12px; font-size:18px; border-radius:12px 12px 0 0;">
+        Sporti-fy AI Assistant
+    </div>
+
+    <div id="chat-messages"
+         style="padding:10px; height:330px; overflow-y:auto;">
+    </div>
+
+    <div style="display:flex; border-top:1px solid #334155;">
+        <input id="chat-input"
+               style="flex:1; padding:10px; background:#0f172a; color:white; border:none; outline:none;"
+               placeholder="Ask me anything...">
+        <button id="chat-send"
+                style="padding:10px 14px; background:#06b6d4; border:none; color:white; cursor:pointer;">
+            Send
+        </button>
+    </div>
+</div>
+
+
+    <div id="chat-messages"
+         style="
+         padding: 10px; 
+         height: 320px; 
+         overflow-y: auto;
+         font-size: 14px;
+         color: white;">
+    </div>
+
+    <div style="display: flex; border-top: 1px solid #334155;">
+        <input id="chat-input" 
+               style="
+               flex: 1; padding: 10px;
+               border: none;
+               background:#0f172a;
+               color: white;
+               outline: none;" 
+               placeholder="Ask me anything..." />
+        <button id="chat-send" 
+                style="
+                padding: 10px 14px;
+                background:#06b6d4;
+                border: none; 
+                color: white;
+                cursor:pointer;">
+            Send
+        </button>
+    </div>
+</div>
+<style>
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+.robot-blink {
+    animation: blink 1s infinite;
+}
+</style>
+
+
+<script>
+const btn = document.getElementById("chatbot-button");
+const box = document.getElementById("chatbot-box");
+const send = document.getElementById("chat-send");
+const input = document.getElementById("chat-input");
+const messages = document.getElementById("chat-messages");
+
+btn.onclick = () => {
+    box.style.display = (box.style.display === "none") ? "flex" : "none";
+};
+let typingInterval;
+
+function showTypingDots() {
+    const typing = document.createElement("p");
+    typing.id = "typingIndicator";
+    typing.style.margin = "6px 0";
+    typing.style.opacity = "0.8";
+    typing.innerHTML = `
+        <strong style="color:#38bdf8;">AI:</strong> 
+        <span id="dotText">Typing</span>
+    `;
+    messages.appendChild(typing);
+    messages.scrollTop = messages.scrollHeight;
+
+    let dots = 0;
+    typingInterval = setInterval(() => {
+        dots = (dots + 1) % 4;
+        document.getElementById("dotText").innerText = "Typing" + ".".repeat(dots);
+    }, 400);
+}
+
+
+function hideTypingDots() {
+    clearInterval(typingInterval);
+    const typing = document.getElementById("typingIndicator");
+    if (typing) typing.remove();
+}
+let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
+
+function saveHistory(sender, text) {
+    chatHistory.push({ sender, text });
+    localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+}
+
+function loadChatHistory() {
+    chatHistory.forEach(m => addMessage(m.sender, m.text));
+}
+
+
+
+send.onclick = async () => {
+    const userMsg = input.value.trim();
+    if (!userMsg) return;
+
+    addMessage("You", userMsg);
+    input.value = "";
+
+    // Show dot typing animation
+    showTypingDots();
+
+    // Delay AI response to look realistic
+    setTimeout(async () => {
+        const botResponse = await getAIResponse(userMsg);
+
+        // Remove typing animation
+        hideTypingDots();
+
+        // Add AI message
+        addMessage("AI", botResponse);
+    }, 1200);
+};
+
+
+
+function addMessage(sender, text) {
+    const wrapper = document.createElement("div");
+    wrapper.style.display = "flex";
+    wrapper.style.margin = "8px 0";
+
+    if (sender === "AI") {
+        wrapper.style.justifyContent = "flex-start";
+        wrapper.innerHTML = `
+            <p style="margin: 0; padding: 8px 10px; background:#1e293b; border-radius:8px; max-width:240px;">
+                <strong style="color:#38bdf8;">AI:</strong> ${text}
+            </p>
+        `;
+    } else {
+        wrapper.style.justifyContent = "flex-end";
+        wrapper.innerHTML = `
+            <p style="margin: 0; padding: 8px 10px; background:#06b6d4; border-radius:8px; color:black; max-width:240px;">
+                <strong>You:</strong> ${text}
+            </p>
+        `;
+    }
+
+    messages.appendChild(wrapper);
+    messages.scrollTop = messages.scrollHeight;
+
+    saveHistory(sender, text);
+}
+
+async function getAIResponse(msg) {
+    msg = msg.trim();
+
+    // ✨ 1. GPT-style dynamic behavior
+    const openers = [
+        "That's a great question!",
+        "Interesting… let me think about that.",
+        "Sure, here’s what I can tell you:",
+        "Good point!",
+        "Alright, here's a clear explanation:"
+    ];
+
+    const followUps = [
+        "Let me know if you'd like a deeper breakdown.",
+        "Would you like examples?",
+        "I can explain more if you want!",
+        "Tell me what you're trying to achieve and I’ll guide you."
+    ];
+
+    const opener = openers[Math.floor(Math.random() * openers.length)];
+    const follow = followUps[Math.floor(Math.random() * followUps.length)];
+
+    // Convert to lowercase for detection
+    const text = msg.toLowerCase();
+
+
+    // ✨ 2. Smart intent-based responses
+    if (text.includes("hello") || text.includes("hi") || text.includes("hey")) {
+        return `${opener} Hi! I’m your Sporti-fy AI assistant.  
+I can help you with training tips, app guidance, athlete insights, or anything you're curious about.  
+${follow}`;
+    }
+
+    if (text.includes("sporti") || text.includes("sportify") || text.includes("what is this")) {
+        return `${opener} Sporti-fy is an AI-driven platform designed to help athletes track progress, evaluate performance, and connect with coaches.  
+It uses lightweight analysis logic and (future) ML models to guide athletes.  
+${follow}`;
+    }
+
+    if (text.includes("train") || text.includes("improve") || text.includes("suggest")) {
+        return `${opener} Based on general sports science principles, improvement comes from consistency, a balanced mix of sprint drills, endurance sessions, strength work, and proper recovery.  
+Sporti-fy normally analyzes your recent test data and gives you specific recommendations.  
+${follow}`;
+    }
+
+    if (text.includes("login") || text.includes("otp")) {
+        return `${opener} To log in, click the **Login / OTP** button at the top-right.  
+For demo mode, OTP is generated locally and shown directly on screen.  
+${follow}`;
+    }
+
+    if (text.includes("coach") || text.includes("athlete")) {
+        return `${opener} Athletes use Sporti-fy to log tests, analyze sprint/pushup/endurance data, and get suggestions.  
+Coaches get tools to compare athletes, check trends, and send plans.  
+${follow}`;
+    }
+
+    if (text.includes("help") || text.includes("how to")) {
+        return `${opener} Sure — tell me exactly what you're trying to do.  
+Whether it’s signup, adding tests, understanding levels, or improving performance, I’ve got you.  
+${follow}`;
+    }
+
+
+    // ✨ 3. GPT-like fallback (natural explanation)
+    const generalReplies = [
+        `That's an interesting point. Here’s how I see it: ${msg}. I can help you understand it better — tell me what part you want to focus on.`,
+        `Hmm… I can definitely help with that. Can you tell me more about what you’re trying to achieve?`,
+        `I’m not fully sure what you mean, but I’d love to understand. Could you explain a bit more?`,
+        `Good question. Here's my take: it depends on your goal. Tell me the context and I’ll break it down.`,
+        `Alright — I get what you're saying. Want a step-by-step explanation or examples?`
+    ];
+
+    return generalReplies[Math.floor(Math.random() * generalReplies.length)];
+}
+function showTyping() {
+    // Add a temporary typing bubble
+    const typing = document.createElement("p");
+    typing.id = "typingIndicator";
+    typing.style.margin = "6px 0";
+    typing.style.opacity = "0.7";
+    typing.innerHTML = `<strong style="color:#38bdf8;">AI:</strong> <span>Typing...</span>`;
+    messages.appendChild(typing);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+</script>
+
 </body>
 </html>
