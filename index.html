@@ -847,7 +847,7 @@
     animation: blink 1s infinite;
 }
 </style>
-
+<script src="server.js"></script>
 
 <script>
 const btn = document.getElementById("chatbot-button");
@@ -950,6 +950,7 @@ function addMessage(sender, text) {
     saveHistory(sender, text);
 }
 
+
 async function getAIResponse(msg) {
     msg = msg.trim();
 
@@ -1035,7 +1036,18 @@ function showTyping() {
     messages.appendChild(typing);
     messages.scrollTop = messages.scrollHeight;
 }
+async function sendMessage() {
+    const userInput = document.getElementById("userInput").value;
 
+    const response = await fetch("http://localhost:5000/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userInput })
+    });
+
+    const data = await response.json();
+    document.getElementById("botReply").innerText = data.reply;
+  }
 </script>
 
 </body>
