@@ -1,0 +1,118 @@
+/* Floating bot button */
+#chatbot-button {
+    position: fixed;
+    bottom: 26px;
+    right: 26px;
+    width: 60px;
+    height: 60px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0px 4px 16px rgba(0,0,0,0.3);
+    cursor: pointer;
+    z-index: 9999;
+}
+
+#chatbot-button img {
+    width: 70%;
+}
+
+
+/* Chatbox Window */
+#chatbot-box {
+    position: fixed;
+    bottom: 100px;
+    right: 26px;
+    width: 300px;
+    height: 380px;
+    background: #0f172a;
+    border-radius: 12px;
+    box-shadow: 0px 4px 20px rgba(0,0,0,0.5);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 9999;
+}
+
+/* Chat Header */
+.chatbot-header {
+    background: #1e293b;
+    padding: 12px;
+    color: white;
+    font-weight: 600;
+    text-align: center;
+    font-size: 14px;
+}
+
+/* Messages Box */
+.chat-messages {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    color: white;
+}
+
+/* Input Area */
+.chat-input-area {
+    display: flex;
+    border-top: 1px solid #334155;
+}
+
+#chat-input {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    outline: none;
+    background: #1e293b;
+    color: #fff;
+}
+
+#chat-send {
+    background: #0ea5e9;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    color: white;
+}
+
+/* Bubbles */
+.user-message {
+    text-align: right;
+    margin: 6px 0;
+}
+
+.user-message span {
+    background: #06b6d4;
+    color: black;
+    padding: 8px 12px;
+    border-radius: 10px;
+    display: inline-block;
+}
+
+.bot-message {
+    margin: 6px 0;
+}
+
+.bot-message span {
+    background: #1e293b;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 10px;
+    display: inline-block;
+}
+
+/* Typing animation */
+#typing span {
+    animation: blink 1.4s infinite both;
+}
+.dot1 { animation-delay: 0s; }
+.dot2 { animation-delay: 0.2s; }
+.dot3 { animation-delay: 0.4s; }
+
+@keyframes blink {
+    0% { opacity: 0.2; }
+    20% { opacity: 1; }
+    100% { opacity: 0.2; }
+}
